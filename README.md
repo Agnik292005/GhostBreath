@@ -73,8 +73,17 @@ Open any notebook and **Run All Cells**. Each notebook is self-contained.
 | Thermal conductance (K_teg) | 0.5 W/K |
 | Boost converter efficiency | 80% (BQ25570) |
 
-**Key result:** GhostBreath is feasible for ΔT ≥ 8 °C. Laptop exhaust provides
-ΔT = 10–25 °C, yielding P_boost = 0.5–5 mW against a 0.5 mW system budget.
+**Key result:** GhostBreath is feasible for ΔT_source ≥ 6 °C (worst-case 40% thermal coupling).
+Laptop exhaust provides ΔT_source = 10–25 °C. Even under the most conservative clip-on coupling
+(40%), the device produces 1.72 mW at ΔT = 10 °C and 10.75 mW at ΔT = 25 °C — 3.4–21.5× the
+0.5 mW system power budget. At nominal 50% coupling: 2.69–16.80 mW across the operating range.
+
+| ΔT_source | Ideal P_boost (η=100%) | Realistic mid (50%) | Realistic low (40%) |
+|-----------|------------------------|---------------------|---------------------|
+| 10 °C | 10.75 mW | 2.69 mW | 1.72 mW ✓ |
+| 15 °C | 24.19 mW | 6.05 mW | 3.87 mW ✓ |
+| 20 °C | 43.01 mW | 10.75 mW | 6.88 mW ✓ |
+| 25 °C | 67.20 mW | 16.80 mW | 10.75 mW ✓ |
 
 **Figures generated:**
 - `figures/01a_teg_voltage_power_current.png` — 3-panel voltage, power, current sweep
