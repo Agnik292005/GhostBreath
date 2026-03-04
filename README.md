@@ -17,7 +17,7 @@ GhostBreath/
 ├── 01_TEG_Power_Model.ipynb        ← Module 1 (complete)
 ├── 02_Supercap_Model.ipynb         ← Module 2 (complete)
 ├── 03_CO2_Room_Model.ipynb         ← Module 3 (complete)
-├── 04_Fatigue_Prediction.ipynb     ← Module 4 (upcoming)
+├── 04_Fatigue_Model.ipynb          ← Module 4 (complete)
 ├── 05_Wokwi_Firmware/
 │   ├── ghostbreath.ino             ← Module 5 (upcoming)
 │   └── diagram.json
@@ -27,7 +27,7 @@ GhostBreath/
 │   ├── teg_model.py                ← TEG physics functions
 │   ├── supercap_model.py           ← Supercapacitor energy buffer model
 │   ├── co2_model.py                ← CO₂ room mass-balance ODE model
-│   └── fatigue_model.py            ← (upcoming)
+│   └── fatigue_model.py            ← Fatigue risk scoring model
 ├── models/
 │   └── fatigue_model.tflite        ← (upcoming)
 ├── figures/
@@ -44,7 +44,7 @@ GhostBreath/
 | 1 | TEG Power Output vs. ΔT | ✅ Complete |
 | 2 | Supercapacitor Charge/Discharge | ✅ Complete |
 | 3 | CO₂ Room Buildup Model | ✅ Complete |
-| 4 | Cognitive Fatigue Prediction (ML) | 🔜 Upcoming |
+| 4 | Cognitive Fatigue Risk Model | ✅ Complete |
 | 5 | MCU Firmware Simulation (Wokwi) | 🔜 Upcoming |
 | 6 | Full System Integration Simulator | 🔜 Upcoming |
 
@@ -161,6 +161,41 @@ Laptop exhaust provides ΔT_source = 10–25 °C. Even under the most conservati
 - `figures/03b_co2_ventilation_events.png` — Ventilation events (1×, 2× window opening)
 - `figures/03c_co2_heatmap.png` — 2D heatmap: time-to-threshold vs room size × ACH
 - `figures/03d_co2_scenarios.png` — Multiple occupancy & metabolic rate comparisons
+
+---
+
+## Module 4: Cognitive Fatigue Risk Model
+
+**Model:** Weighted sigmoid — 3 inputs, 1 output (score 0–1). Lightweight enough
+for ESP32-C3 integer arithmetic (3 multiplies + 2 exp() calls per sample).
+
+| Input | Symbol | Source |
+|-------|--------|--------|
+| CO₂ concentration | C [ppm] | SCD41 reading (Module 2/3) |
+| CO₂ rate of change | dC/dt [ppm/min] | Finite difference on readings |
+| Study duration | t [min] | System clock |
+
+**Scoring formula:**
+
+`score = 0.60 · f_co₂(C) + 0.20 · f_rate(dC/dt) + 0.20 · f_time(t)`
+
+| Score | Classification | CO₂ context |
+|-------|---------------|-------------|
+| 0.00 – 0.30 | Safe | typically < 1000 ppm |
+| 0.30 – 0.60 | Mild Fatigue | typically 1000–1500 ppm |
+| 0.60 – 1.00 | High Fatigue | typically > 1400 ppm or long session |
+
+**Key results (1 person, 27 m³ room, windows closed):**
+- Mild Fatigue alert at **t ≈ 45 min** (C ≈ 868 ppm) — 16 min earlier than fixed CO₂ threshold
+- High Fatigue alert at **t ≈ 103 min** (C ≈ 1314 ppm) — 31 min earlier than 1500 ppm threshold
+- Opening a window at t = 90 min delays High Fatigue alert by > 60 min
+- Two occupants triggers High Fatigue alert 2.5× sooner (t ≈ 48 min)
+- Model adds **zero additional energy cost** (runs inside existing BLE TX wake window)
+
+**Figures generated:**
+- `figures/04a_fatigue_score_vs_time.png` — CO₂ and fatigue score dual-panel, 4-hour session
+- `figures/04b_alert_thresholds.png` — Score decomposition + decision surface contour map
+- `figures/04c_scenario_comparison.png` — Three scenarios: window closed / open / 2 occupants
 
 ---
 

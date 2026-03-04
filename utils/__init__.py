@@ -17,3 +17,7 @@ from utils.co2_model import (
     window_open_event, time_to_recover, scenario_summary,
     DEFAULT_ROOM, METABOLIC_RATES, THRESHOLDS,
 )
+from utils.fatigue_model import (
+    fatigue_score, fatigue_classification, simulate_fatigue_over_session,
+    CO2_THRESHOLDS, SCORE_THRESHOLDS, DEFAULT_WEIGHTS,
+)
