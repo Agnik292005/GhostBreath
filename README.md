@@ -104,7 +104,7 @@ Laptop exhaust provides ΔT_source = 10–25 °C. Even under the most conservati
 | Max voltage | V_max | 2.7 V |
 | Min voltage | V_min | 1.0 V |
 | ESR | R_ESR | 50 mΩ |
-| Usable energy | E | ≈ 3.14 mJ |
+| Usable energy | E | ≈ 3.14 J |
 
 **System load (SCD41 + ESP32-C3, duty-cycled at 3.3 V):**
 
@@ -115,10 +115,10 @@ Laptop exhaust provides ΔT_source = 10–25 °C. Even under the most conservati
 | Deep sleep (both) | ~45 µA | remainder |
 
 **Key results:**
-- With ΔT_src = 15 °C and η_th = 50%: minimum sustainable measurement period is ~60–120 s
+- Minimum sustainable measurement period: 68 s worst-case (ΔT=10 °C, 40% coupling); 19 s nominal (ΔT=15 °C, 50%)
 - Cold-start boot time (V_min → 1.5 V): < 5 min at all viable ΔT levels
 - Discharge survival with TEG off: > 5 min at T = 120 s duty cycle
-- 1 F supercap provides ~100× safety margin over minimum required capacitance
+- 1 F supercap provides ~29× safety margin over minimum required capacitance
 
 **Figures generated:**
 - `figures/02a_supercap_load_vs_period.png` — System load vs. measurement period with TEG power lines
