@@ -16,7 +16,7 @@ This repository contains the **full software simulation** — no physical hardwa
 GhostBreath/
 ├── 01_TEG_Power_Model.ipynb        ← Module 1 (complete)
 ├── 02_Supercap_Model.ipynb         ← Module 2 (complete)
-├── 03_CO2_Room_Model.ipynb         ← Module 3 (upcoming)
+├── 03_CO2_Room_Model.ipynb         ← Module 3 (complete)
 ├── 04_Fatigue_Prediction.ipynb     ← Module 4 (upcoming)
 ├── 05_Wokwi_Firmware/
 │   ├── ghostbreath.ino             ← Module 5 (upcoming)
@@ -81,6 +81,7 @@ Open any notebook and **Run All Cells**. Each notebook is self-contained.
 - `figures/01b_teg_feasibility.png` — Feasibility plot with 0.5 mW budget line
 - `figures/01c_teg_heatsink_analysis.png` — Heatsink thermal resistance impact
 - `figures/01d_teg_iv_pv_curves.png` — I-V and P-V characteristics
+- `figures/01e_teg_realistic_power.png` — Realistic power band with thermal coupling losses (40–60% efficiency)
 
 ---
 

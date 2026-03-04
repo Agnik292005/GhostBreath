@@ -11,3 +11,9 @@ from utils.supercap_model import (
     system_power_W, min_period_for_power, simulate, duty_cycle_analysis,
     DEFAULT_SUPERCAP, SYSTEM_LOAD,
 )
+from utils.co2_model import (
+    steady_state, co2_analytical, time_to_threshold,
+    solve_co2, multi_occupant_q, heatmap_time_to_threshold,
+    window_open_event, time_to_recover, scenario_summary,
+    DEFAULT_ROOM, METABOLIC_RATES, THRESHOLDS,
+)
