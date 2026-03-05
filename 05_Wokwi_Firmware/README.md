@@ -99,28 +99,29 @@ Each cycle the SSD1306 screen refreshes with four lines:
 
 ---
 
-## Library Setup (wokwi.toml)
+## Library Setup
 
-The `wokwi.toml` file declares the required Adafruit libraries so Wokwi
-installs them automatically before compiling:
+### Option A — Library Manager (wokwi.com, recommended)
 
-```toml
-[wokwi]
-version = 1
+1. In your Wokwi project, click the **Library Manager** tab (book icon or the tab visible next to diagram.json)
+2. Click **+** and search for **Adafruit SSD1306** → Install
+3. Adafruit GFX Library is installed automatically as a dependency
+4. The editor creates/updates `libraries.txt` for you
 
-[[libraries]]
-name = "Adafruit SSD1306"
-version = "*"
+### Option B — libraries.txt (manual)
 
-[[libraries]]
-name = "Adafruit GFX Library"
-version = "*"
+Create a file named **`libraries.txt`** (note: `.txt`, not `.toml` — wokwi.com
+does not support `.toml`) alongside `ghostbreath.ino` with this content:
+
+```
+Adafruit GFX Library
+Adafruit SSD1306
 ```
 
-When using the **Wokwi VS Code extension** or **Wokwi CLI**, place `wokwi.toml`
-in the same folder as `ghostbreath.ino`. When using **wokwi.com** directly,
-the libraries are auto-resolved from `#include` directives, so no extra step
-is needed.
+The repository already includes this file at `05_Wokwi_Firmware/libraries.txt`.
+
+> **Note:** `wokwi.toml` is supported by the Wokwi CLI and VS Code extension
+> but **not** by wokwi.com. On wokwi.com, always use `libraries.txt`.
 
 ---
 

@@ -21,7 +21,7 @@ GhostBreath/
 ├── 05_Wokwi_Firmware/              ← Module 5 (complete, v2 OLED edition)
 │   ├── ghostbreath.ino             ← ESP32 Arduino sketch (+ OLED, bug-fixes)
 │   ├── diagram.json                ← Wokwi circuit schematic (+ SSD1306)
-│   ├── wokwi.toml                  ← Adafruit library declarations
+│   ├── libraries.txt               ← Adafruit library declarations (wokwi.com)
 │   └── README.md                   ← Simulation instructions
 ├── 06_Full_System_Simulator.ipynb  ← Module 6 (complete)
 ├── utils/

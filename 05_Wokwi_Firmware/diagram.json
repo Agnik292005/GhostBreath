@@ -89,9 +89,9 @@
     ["esp:D4",     "buzzer:1",    "orange",["h120", "v160"]],
     ["buzzer:2",   "esp:GND.4",   "black", ["v30",  "h-110", "v-180"]],
 
-    ["esp:SDA",    "oled:SDA",    "blue",  ["v50",  "h-60"]],
-    ["esp:SCL",    "oled:SCL",    "cyan",  ["v40",  "h-50"]],
-    ["esp:3V3.3",  "oled:VCC",    "red",   ["v30",  "h-40"]],
-    ["esp:GND.5",  "oled:GND",    "black", ["v20",  "h-30"]]
+    ["esp:D21",    "oled:SDA",    "blue",  []],
+    ["esp:D22",    "oled:SCL",    "cyan",  []],
+    ["esp:3V3.1",  "oled:VCC",    "red",   []],
+    ["esp:GND.1",  "oled:GND",    "black", []]
   ]
 }
