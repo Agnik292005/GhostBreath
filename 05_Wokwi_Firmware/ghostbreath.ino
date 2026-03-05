@@ -79,9 +79,11 @@
 #define SCORE_HIGH  0.60f
 
 // ─── Session state ────────────────────────────────────────────────────────────
-static uint32_t s_cycle        = 0;
-static float    s_study_min    = 0.0f;   // accumulated study time [min]
-static float    s_prev_co2     = CO2_PPM_MIN;  // previous CO₂ reading [ppm]
+// RTC_DATA_ATTR preserves these variables across ESP32 deep-sleep cycles.
+// In Wokwi simulation (delay-based), plain static works identically.
+RTC_DATA_ATTR static uint32_t s_cycle     = 0;
+RTC_DATA_ATTR static float  s_study_min   = 0.0f;  // accumulated study time [min]
+RTC_DATA_ATTR static float  s_prev_co2    = CO2_PPM_MIN;  // previous CO₂ [ppm]
 
 // ─── Sub-score helpers ────────────────────────────────────────────────────────
 
