@@ -10,12 +10,13 @@ Embedded Systems Course Project · March 2026
 This folder contains the ESP32 firmware for the GhostBreath device, simulated
 in [Wokwi](https://wokwi.com) — an online ESP32/Arduino circuit simulator.
 
-The firmware is a **direct embedded port** of the Python model from Module 4
-(`utils/fatigue_model.py`). Every constant, weight, and formula is identical;
-the only differences are language (C vs Python) and input source (ADC
-potentiometers vs ODE simulation).
+The firmware is a **direct embedded port** of the Python fatigue model from
+Module 4 (`utils/fatigue_model.py`). Every constant, weight, and formula is
+identical; the only differences are language (C vs Python) and input source
+(ADC potentiometers replace the CO₂ ODE solver).
 
-**v2 adds:** SSD1306 OLED live display, three Wokwi bug-fixes.
+**v2 adds:** SSD1306 OLED live display + three Wokwi bug-fixes (ADC range,
+boot deadlock, buzzer tone).
 
 ---
 
@@ -25,7 +26,7 @@ potentiometers vs ODE simulation).
 |------|-------------|
 | `ghostbreath.ino` | ESP32 Arduino sketch — full fatigue monitor firmware (v2) |
 | `diagram.json` | Wokwi circuit diagram — ESP32 + 2 pots + LED + buzzer + OLED |
-| `wokwi.toml` | Library declarations for Wokwi (Adafruit GFX + SSD1306) |
+| `libraries.txt` | Adafruit library declarations for Wokwi.com Library Manager |
 | `README.md` | This file |
 
 ---
@@ -64,13 +65,9 @@ potentiometers vs ODE simulation).
 
 | # | Root Cause | Symptom | Fix |
 |---|-----------|---------|-----|
-| 1 | `analogRead()` defaults to `ADC_0db` attenuation (0–1.1 V range); the 3.3 V pot signal maps to 0 in some Wokwi builds | CO₂ locks at 420 ppm; score never crosses 0.70; LED/buzzer never fire | `analogSetAttenuation(ADC_11db)` in `setup()` before any ADC call |
-| 2 | `while (!Serial) delay(10)` deadlocks `setup()` on some Wokwi/ESP32-Arduino versions | Firmware hangs on boot; no cycles ever run | Removed the guard entirely |
-| 3 | `wokwi-buzzer` requires a frequency-modulated signal; `digitalWrite(HIGH)` is silent in the simulator | Alert LED lights but buzzer makes no sound | Replaced with `tone(PIN_BUZZER, 1000)` / `noTone(PIN_BUZZER)` |
-
-Additionally, the CO₂ potentiometer default `value` in `diagram.json` is now
-`"0.75"` (≈ 1980 ppm) so the demo starts with elevated CO₂ and alerts fire
-within 1–2 cycles without requiring manual adjustment.
+| 1 | `analogRead()` defaults to `ADC_0db` (0–1.1 V range); pot signals above ~1.1 V read as 0 | CO₂ locked at 420 ppm; score never crosses 0.70; LED/buzzer never fire | `analogSetAttenuation(ADC_11db)` in `setup()` |
+| 2 | `while (!Serial) delay(10)` deadlocks `setup()` on some Wokwi builds | Firmware hangs on boot; no cycles ever execute | Removed the guard |
+| 3 | `wokwi-buzzer` requires a frequency signal; `digitalWrite(HIGH)` is silent | LED lights but buzzer makes no sound | `tone(PIN_BUZZER, 1000)` / `noTone()` |
 
 ---
 
@@ -83,181 +80,307 @@ Each cycle the SSD1306 screen refreshes with four lines:
 │ GhostBreath            │  ← fixed title
 │────────────────────────│
 │ CO2: 1980 ppm          │  ← live ADC reading
-│ Score: 0.752           │  ← fatigue risk score
+│ Score: 0.807           │  ← fatigue risk score [0.0–1.0]
 │                        │
-│ ██████████████████████ │  ← status (inverted white banner on ALERT)
-│ █    ALERT           █ │
+│ ██████████████████████ │  ← ALERT state: white banner, large black text
+│ █      ALERT         █ │
 └────────────────────────┘
 ```
 
-| Score range | OLED text (Line 4) | Font | Background |
-|-------------|-------------------|------|------------|
-| < 0.30 | `SAFE` | Size 1 (normal) | Black |
-| 0.30 – 0.60 | `MILD FATIGUE` | Size 1 (normal) | Black |
-| 0.60 – 0.70 | `HIGH FATIGUE` | Size 1 (normal) | Black |
-| ≥ 0.70 | `ALERT` | Size 2 (large) | **White** (inverted, black text) |
+| Score range | OLED Line 4 | Font size | Background |
+|-------------|-------------|-----------|------------|
+| < 0.30 | `SAFE` | Small (size 1) | Black |
+| 0.30 – 0.60 | `MILD FATIGUE` | Small (size 1) | Black |
+| 0.60 – 0.70 | `HIGH FATIGUE` | Small (size 1) | Black |
+| ≥ 0.70 | `ALERT` | Large (size 2) | **White** (inverted — black text on white) |
 
 ---
 
 ## Library Setup
 
-### Option A — Library Manager (wokwi.com, recommended)
+### Option A — Library Manager on wokwi.com (recommended)
 
-1. In your Wokwi project, click the **Library Manager** tab (book icon or the tab visible next to diagram.json)
-2. Click **+** and search for **Adafruit SSD1306** → Install
-3. Adafruit GFX Library is installed automatically as a dependency
-4. The editor creates/updates `libraries.txt` for you
+1. Open your Wokwi project
+2. Click the **"Library Manager"** tab in the editor panel
+3. Click the **+** button and search for **`Adafruit SSD1306`**
+4. Click **Add** — Adafruit GFX Library is pulled in automatically as a dependency
+5. Close Library Manager; `libraries.txt` is now created in the project
 
-### Option B — libraries.txt (manual)
+### Option B — Paste `libraries.txt` manually
 
-Create a file named **`libraries.txt`** (note: `.txt`, not `.toml` — wokwi.com
-does not support `.toml`) alongside `ghostbreath.ino` with this content:
+Create a new file named exactly `libraries.txt` (`.txt` extension — wokwi.com
+**does not** accept `.toml`) and paste:
 
 ```
 Adafruit GFX Library
 Adafruit SSD1306
 ```
 
-The repository already includes this file at `05_Wokwi_Firmware/libraries.txt`.
+The file `05_Wokwi_Firmware/libraries.txt` in this repo is ready to copy.
 
-> **Note:** `wokwi.toml` is supported by the Wokwi CLI and VS Code extension
-> but **not** by wokwi.com. On wokwi.com, always use `libraries.txt`.
+> **VS Code / Wokwi CLI users:** Both `libraries.txt` and `wokwi.toml` work
+> with the extension/CLI. On wokwi.com only `.txt` is accepted.
 
 ---
 
 ## Firmware Behaviour
 
-Each cycle (5 simulated minutes of study time):
+Each cycle represents **5 real minutes** of study time (simulated as a 5-second
+`delay()` in Wokwi):
 
 ```
 Wake
  │
- ├─ Read ADC 34 × 8 samples → CO₂ ppm  (potentiometer maps 420–2500 ppm)
- ├─ Read ADC 35 × 8 samples → TEG V    (potentiometer maps 0–3.3 V)
+ ├─ Read ADC 34 × 8 samples → CO₂ ppm  (left pot maps 420–2500 ppm)
+ ├─ Read ADC 35 × 8 samples → TEG V    (right pot maps 0–3.3 V)
  ├─ Compute dC/dt = (C_now − C_prev) / 5 min
  │
  ├─ score = 0.60·f_co2(C) + 0.20·f_rate(dC/dt) + 0.20·f_time(t)
- │     f_co2(C)    = sigmoid(0.004 × (C − 1250))
- │     f_rate(r)   = clip(r / 15, −1, +1) → [0, 1]
- │     f_time(t)   = sigmoid(0.033 × (t − 90))
+ │     f_co2(C)  = sigmoid(0.004 × (C − 1250))
+ │     f_rate(r) = clip(r / 15, −1, +1) scaled to [0, 1]
+ │     f_time(t) = sigmoid(0.033 × (t − 90))
  │
- ├─ If score ≥ 0.70 → LED ON + tone(buzzer, 1 kHz) + OLED "ALERT" (inverted)
- ├─ Else            → LED OFF + noTone(buzzer)     + OLED status text
+ ├─ If score ≥ 0.70  →  LED ON  +  tone(buzzer, 1 kHz)  +  OLED ALERT banner
+ ├─ Else             →  LED OFF +  noTone(buzzer)         +  OLED status text
  │
- ├─ Serial: print cycle table + sub-score breakdown (optional)
+ ├─ Serial: formatted cycle table + sub-score breakdown (115200 baud)
  │
- └─ Deep sleep 5 min   (simulated as delay 5 s in Wokwi)
+ └─ delay(5000 ms)   ← simulates 5-min deep sleep in Wokwi
 ```
 
-### Score classification (consistent with Module 4)
+### Score classification
 
-| Score | Label | Action |
-|-------|-------|--------|
-| 0.00 – 0.30 | SAFE | No alert |
-| 0.30 – 0.60 | MILD FATIGUE | No alert |
-| 0.60 – 0.70 | HIGH FATIGUE | No alert |
-| ≥ 0.70 | ALERT | LED + Buzzer + OLED inverted banner |
+| Score | Label | LED | Buzzer |
+|-------|-------|-----|--------|
+| 0.00 – 0.30 | SAFE | OFF | Silent |
+| 0.30 – 0.60 | MILD FATIGUE | OFF | Silent |
+| 0.60 – 0.70 | HIGH FATIGUE | OFF | Silent |
+| ≥ 0.70 | ALERT | **ON** | **1 kHz** |
 
 ---
 
-## How to Run the Simulation in Wokwi
+## How to Set Up the Simulation (Full Steps)
 
-### Option A — Direct URL (recommended)
+### Step 1 — Create the project
 
 1. Go to **[wokwi.com](https://wokwi.com)**
 2. Click **"New Project"** → select **"ESP32"**
-3. Replace the default sketch with the contents of `ghostbreath.ino`
-4. Click the **"diagram.json"** tab and replace its contents with `diagram.json`
-5. Click the green **▶ Start Simulation** button
-6. The OLED display appears on-screen immediately; no Serial Monitor needed
 
-### Option B — Wokwi CLI (VS Code / terminal)
+### Step 2 — Paste the firmware
 
-```bash
-# Install Wokwi CLI
-npm install -g @wokwi/cli
+1. Click the **`sketch.ino`** tab
+2. Select all (Ctrl+A) and delete
+3. Paste the full contents of `ghostbreath.ino`
 
-# In the 05_Wokwi_Firmware/ directory:
-wokwi-cli simulate --diagram diagram.json --sketch ghostbreath.ino
+### Step 3 — Paste the circuit diagram
+
+1. Click the **`diagram.json`** tab
+2. Select all (Ctrl+A) and delete
+3. Paste the full contents of `diagram.json`
+4. The circuit view should now show: ESP32 + 2 potentiometers + red LED + buzzer + SSD1306 OLED
+5. **Check:** the OLED should have coloured wires connecting it to the ESP32 (blue, cyan, red, black). If it shows a `?` badge, re-paste `diagram.json` from the current version of this repo.
+
+### Step 4 — Install libraries
+
+1. Click the **"Library Manager"** tab
+2. Click **+** → search **`Adafruit SSD1306`** → **Add**
+3. Both Adafruit SSD1306 and Adafruit GFX Library appear in "Installed Libraries"
+
+### Step 5 — Start the simulation
+
+Click the green **▶ Start Simulation** button.
+
+---
+
+## Potentiometer Controls — How to Use the Dials
+
+Wokwi renders each potentiometer as a round dial with a small tick mark.
+
+### Interacting with the dial
+
+| Action | How to do it in Wokwi |
+|--------|----------------------|
+| Turn clockwise (increase) | Click and **drag right or upward** |
+| Turn counter-clockwise (decrease) | Click and **drag left or downward** |
+| Fine control | **Scroll mouse wheel** while hovering over the knob |
+| Reset to 0% | Right-click the knob → **Reset** |
+
+### Reading the dial position by clock face
+
+```
+     12 o'clock = 50%
+          │
+ 9 o'clock ── [knob] ── 3 o'clock
+  (0% / min)              (100% / max)
 ```
 
-### Option C — Wokwi VS Code Extension
+- **9 o'clock** (tick pointing left) = **0%** = minimum
+- **12 o'clock** (tick pointing straight up) = **50%** = midpoint
+- **3 o'clock** (tick pointing right) = **100%** = maximum
 
-1. Install the **Wokwi Simulator** extension from the VS Code marketplace
-2. Open the `05_Wokwi_Firmware/` folder in VS Code
-3. Press `F1` → **Wokwi: Start Simulator**
+### CO₂ potentiometer (left dial, GPIO34)
 
----
+This is the **primary control**. It maps 0–100% dial rotation to 420–2500 ppm CO₂.
 
-## Running the Simulation — Step by Step
+| Dial position | Clock face | CO₂ ppm | f_co₂ score | Study session context |
+|---------------|-----------|---------|------------|----------------------|
+| 0% | 9 o'clock (fully left) | 420 ppm | 0.035 | Clean outdoor air |
+| ~33% | ~11 o'clock | ~1110 ppm | 0.374 | Mild classroom, window open |
+| 50% | 12 o'clock (straight up) | ~1460 ppm | 0.698 | Stuffy room, 1 hr study |
+| ~65% | ~1 o'clock | ~1750 ppm | 0.872 | Poor ventilation, 2 hrs |
+| **75%** | **~2 o'clock** | **~1980 ppm** | **0.938** | **Default — alert fires in 1–2 cycles** |
+| 100% | 3 o'clock (fully right) | 2500 ppm | 0.993 | Severe, alert fires immediately |
 
-Once the simulation starts:
+> **Default:** `diagram.json` sets the CO₂ dial to **75%** so the simulation
+> demonstrates an alert without any manual adjustment. If you want to see SAFE
+> first, turn it fully left before pressing ▶.
 
-1. **Watch the OLED display** on-screen — it shows CO₂, score, and status
-   without opening the Serial Monitor
-2. The CO₂ pot starts at **75%** (≈ 1980 ppm) so the score begins elevated
-3. **Within 1–2 cycles** (5–10 s real time) the score should cross 0.70:
-   - OLED shows large **ALERT** in an inverted white banner
-   - **Red LED** lights up
-   - **Buzzer** sounds at 1 kHz
-4. **Turn the CO₂ pot counter-clockwise** to lower CO₂ and watch the score drop
-   back to SAFE — LED/buzzer deactivate, OLED returns to normal text
-5. **Serial Monitor** (115200 baud) optionally shows the full per-cycle table
-   and sub-score breakdown for verification
+### TEG potentiometer (right dial, GPIO35)
 
-### Triggering an alert — quick reference
-
-| Pot position (left/CO₂) | CO₂ equivalent | Score at cycle 1 | Alert? |
-|--------------------------|---------------|-----------------|--------|
-| Fully left (0%) | 420 ppm | ~0.13 | No |
-| 50% | ~1460 ppm | ~0.63 | Not yet |
-| 75% (default in diagram) | ~1980 ppm | ~0.81 | **Yes** |
-| Fully right (100%) | 2500 ppm | ~0.85 | **Yes** |
-
-> At 50% the score starts below 0.70 but rises above it after ~20 cycles
-> (100 simulated minutes) as the `f_time` component increases.
+This dial simulates the TEG boost voltage (0–3.3 V). It is displayed on the
+OLED and serial output for completeness but **has no effect on the fatigue
+score**. Leave it at any position.
 
 ---
 
-## Example OLED Screens
+## Step-by-Step Demo Walkthrough
 
-**Safe state** (CO₂ pot at minimum):
+The following describes exactly what you should see at each stage of the
+simulation with the CO₂ pot at its default 75% position.
+
+### Stage 1 — Boot (0–1 second)
+
+**What happens:**
+- Serial Monitor prints the startup banner (if open)
+- OLED shows the splash screen:
+  ```
+  GhostBreath v2
+  CO2 Fatigue Monitor
+
+  Initialising...
+  ```
+- LED: OFF
+- Buzzer: silent
+
+**What to look for:** OLED text visible on the blue display tile in the circuit view.
+
+---
+
+### Stage 2 — First cycle fires (5 seconds after start)
+
+**What happens:**
+- OLED refreshes to live readings
+- CO₂ reads ~1980 ppm (dial at 75%)
+- Rate = (1980 − 420) / 5 = +312 ppm/min → clamped to max → f_rate = 1.0
+- f_time(5 min) = 0.057 (session just started)
+- **Score = 0.60 × 0.938 + 0.20 × 1.0 + 0.20 × 0.057 = 0.563 + 0.200 + 0.011 = 0.807**
+
+**What you see:**
 ```
 GhostBreath
-────────────────
+────────────
+CO2: 1980 ppm
+Score: 0.807
+████████████  ← white filled rectangle
+█  ALERT   █  ← large black text on white
+████████████
+```
+- **LED:** bright red — ON
+- **Buzzer:** audible 1 kHz tone
+- **Serial:** `Cycle #001 | Score: 0.8070 | Alert: ON`
+
+---
+
+### Stage 3 — Turn CO₂ dial counter-clockwise to 50% (12 o'clock)
+
+Wait for the next cycle (~5 seconds).
+
+**What happens:**
+- CO₂ reads ~1460 ppm
+- Rate = (1460 − 1980) / 5 = −104 ppm/min → clamped → f_rate = 0.0
+  (CO₂ is falling, so rate penalty applies)
+- f_time(10 min) = 0.064
+- **Score = 0.60 × 0.698 + 0.20 × 0.0 + 0.20 × 0.064 = 0.419 + 0.000 + 0.013 = 0.432**
+
+> Score < 0.70 → alert clears
+
+**What you see:**
+```
+GhostBreath
+────────────
+CO2: 1460 ppm
+Score: 0.432
+
+MILD FATIGUE   ← normal small text, black background
+```
+- **LED:** OFF
+- **Buzzer:** silent
+
+---
+
+### Stage 4 — Turn CO₂ dial fully counter-clockwise (0%, 9 o'clock)
+
+Wait for next cycle.
+
+**What happens:**
+- CO₂ = 420 ppm
+- **Score ≈ 0.13** (very low CO₂, session still young)
+
+**What you see:**
+```
+GhostBreath
+────────────
 CO2: 420 ppm
 Score: 0.131
 
-SAFE
+SAFE           ← small text
 ```
-
-**Alert state** (CO₂ pot at 75%+):
-```
-GhostBreath
-────────────────
-CO2: 1980 ppm
-Score: 0.807
-
-████████████████
-█    ALERT     █  ← large white-on-black banner
-████████████████
-```
+- **LED:** OFF
+- **Buzzer:** silent
 
 ---
 
-## Example Serial Output (optional, 115200 baud)
+### Stage 5 — Turn CO₂ dial fully clockwise (100%, 3 o'clock)
 
+Wait for next cycle.
+
+**What happens:**
+- CO₂ = 2500 ppm
+- Rate = (2500 − 420) / 5 = +416 ppm/min → clamped → f_rate = 1.0
+- **Score ≈ 0.85**
+
+**What you see:**
 ```
-+=======================================================+
-|       GhostBreath v2 -- Cognitive Fatigue Monitor     |
-|   Battery-free  |  TEG-powered  |  ESP32 + OLED       |
-+=======================================================+
-...
-Bug-fixes applied (v2):
-  [1] analogSetAttenuation(ADC_11db) -- full 0-3.3V ADC range
-  [2] Removed while(!Serial) guard  -- no Wokwi deadlock
-  [3] tone()/noTone() buzzer         -- audible in Wokwi
+GhostBreath
+────────────
+CO2: 2500 ppm
+Score: 0.851
+████████████
+█  ALERT   █   ← ALERT banner returns
+████████████
+```
+- **LED:** ON
+- **Buzzer:** 1 kHz
 
+---
+
+## What Correct Output Looks Like — Quick Reference
+
+### OLED states at each dial position
+
+| CO₂ Dial | Approx ppm | OLED status text | OLED style | LED | Buzzer |
+|-----------|-----------|-----------------|------------|-----|--------|
+| 0% — 9 o'clock | 420 | `SAFE` | Small, white on black | OFF | Silent |
+| ~33% — 11 o'clock | ~1110 | `MILD FATIGUE` | Small, white on black | OFF | Silent |
+| ~50% — 12 o'clock | ~1460 | `MILD FATIGUE` → `HIGH FATIGUE` | Small, white on black | OFF | Silent |
+| ~65% — 1 o'clock | ~1750 | `HIGH FATIGUE` (cycles 1–2) → `ALERT` (later) | Transitions | OFF→ON | Silent→1kHz |
+| **75% — 2 o'clock** | **~1980** | **`ALERT`** | **Large, black on white** | **ON** | **1 kHz** |
+| 100% — 3 o'clock | 2500 | `ALERT` | Large, black on white | ON | 1 kHz |
+
+### Serial Monitor output (optional, 115200 baud)
+
+When the OLED shows `ALERT`:
+```
 +---------------------------------------------------------+
 |  GhostBreath   Cycle #001      Session:     5 min       |
 +-----------------------------+---------------------------+
@@ -266,36 +389,69 @@ Bug-fixes applied (v2):
 |  Status : ALERT / HIGH FATIGUE |  Alert :  ON           |
 +---------------------------------------------------------+
 
-  [scores] f_co2=0.993  f_rate=1.000  f_time=0.057
-  [weights] 0.60*0.993 + 0.20*1.000 + 0.20*0.057 = 0.8070
+  [scores] f_co2=0.938  f_rate=1.000  f_time=0.057
+  [weights] 0.60*0.938 + 0.20*1.000 + 0.20*0.057 = 0.8070
 ```
+
+When the OLED shows `SAFE` (dial at 0%):
+```
+|  CO2    :   420.0 ppm       |  dC/dt :    +0.00 ppm/min |
+|  Score :  0.1312            |  Alert :  OFF              |
+  [scores] f_co2=0.035  f_rate=0.500  f_time=0.057
+```
+
+---
+
+## Troubleshooting
+
+| Symptom | Most Likely Cause | Fix |
+|---------|------------------|-----|
+| OLED completely black, no text | Adafruit SSD1306 library not installed | Open Library Manager → Add "Adafruit SSD1306" |
+| OLED shows a `?` badge on the component | Wrong pin names in old `diagram.json` (`esp:SDA` / `esp:SCL` don't exist) | Re-paste the current `diagram.json` from this repo |
+| OLED has wires but stays black | I2C address mismatch (rare) | The firmware uses `0x3C` — standard for 128×64 SSD1306 modules |
+| LED never lights even with dial at max | Old `.ino` (v1) missing `analogSetAttenuation()` | Re-paste current `ghostbreath.ino` (v2) |
+| Buzzer icon shows but produces no sound | Old `.ino` using `digitalWrite(HIGH)` instead of `tone()` | Re-paste current `ghostbreath.ino` (v2) |
+| Score shown on OLED never crosses 0.70 | ADC attenuation bug in old firmware | Re-paste `ghostbreath.ino` (v2); also try turning dial fully clockwise |
+| Simulation appears frozen / no output | Old `.ino` with `while (!Serial) delay(10)` deadlock | Re-paste `ghostbreath.ino` (v2) |
+| OLED shows readings, dial at 75%, but score is ~0.13 | You re-ran with `s_prev_co2` = 1980; rate = 0 so first-cycle spike is missing | Normal — score will still be ~0.63 (above threshold after study time builds) |
+| Score ≈ 0.43 after turning dial down then back up | CO₂ fell first (negative rate) → lower f_rate | Normal physics; wait 1 more cycle or set dial to 100% for instant ALERT |
 
 ---
 
 ## Screenshots to Capture for Report
 
-### Screenshot 1 — Safe state
-- CO₂ pot counter-clockwise (420 ppm)
-- OLED shows `SAFE`, score < 0.30, LED OFF
+### Screenshot 1 — SAFE state
+- CO₂ dial at **0%** (9 o'clock, fully left)
+- OLED shows `SAFE`, score < 0.30
+- LED OFF
 
-### Screenshot 2 — Mild / High Fatigue
-- CO₂ pot at ~50% (1460 ppm), early cycles
-- OLED shows `MILD FATIGUE` or `HIGH FATIGUE`, LED OFF
+### Screenshot 2 — MILD FATIGUE
+- CO₂ dial at **~33%** (11 o'clock)
+- OLED shows `MILD FATIGUE`, score 0.30–0.60
+- LED OFF
 
-### Screenshot 3 — Alert triggered
-- CO₂ pot at 75%+ (1980–2500 ppm)
-- OLED shows inverted **ALERT** banner, LED ON, buzzer active
-- Capture OLED + LED in the same Wokwi circuit view
+### Screenshot 3 — HIGH FATIGUE (no alert)
+- CO₂ dial at **50%** (12 o'clock)
+- OLED shows `HIGH FATIGUE`, score 0.60–0.70
+- LED OFF
 
-### Screenshot 4 — Sub-score breakdown (Serial Monitor)
-- Show `[scores]` and `[weights]` lines
-- Annotate correspondence with Module 4 Python output
+### Screenshot 4 — ALERT triggered
+- CO₂ dial at **75–100%** (2–3 o'clock)
+- OLED shows large **ALERT** banner (inverted: white background, black text)
+- **LED ON** (bright red visible in circuit view)
+- Buzzer active (1 kHz)
+- Capture both OLED and LED in the same Wokwi circuit view
+
+### Screenshot 5 — Sub-score breakdown (Serial Monitor)
+- Open Serial Monitor at 115200 baud
+- Show the `[scores]` and `[weights]` debug lines
+- Annotate the correspondence with Module 4 Python model output
 
 ---
 
 ## Firmware–Model Consistency Verification
 
-The C firmware constants identically mirror `utils/fatigue_model.py`:
+All constants in `ghostbreath.ino` are identical to `utils/fatigue_model.py`:
 
 | Constant | Python (`fatigue_model.py`) | C (`ghostbreath.ino`) |
 |----------|----------------------------|-----------------------|
@@ -307,7 +463,7 @@ The C firmware constants identically mirror `utils/fatigue_model.py`:
 | Weight CO₂ | `w_co2 = 0.60` | `W_CO2 0.60f` |
 | Weight rate | `w_rate = 0.20` | `W_RATE 0.20f` |
 | Weight time | `w_time = 0.20` | `W_TIME 0.20f` |
-| Alert threshold | `0.70` (Module 5 firmware) | `ALERT_THRESHOLD 0.70f` |
+| Alert threshold | `0.70` | `ALERT_THRESHOLD 0.70f` |
 
 ---
 
@@ -330,7 +486,7 @@ To deploy on a physical ESP32 with SCD41 CO₂ sensor:
 2. Replace `analogRead(PIN_TEG_ADC)` with BQ25570 `V_OUT_OK` / MPPT output
 3. Uncomment the `esp_deep_sleep_start()` call in `loop()`
 4. Comment out `delay(SIM_CYCLE_MS)`
-5. The OLED (GPIO21/22) and SCD41 share the I²C bus — different addresses
+5. The OLED (GPIO21/22) and SCD41 share the I²C bus — different I²C addresses
    (OLED: 0x3C, SCD41: 0x62) so no conflict
 6. Install: `arduino-cli lib install "Sensirion I2C SCD4x"`
 7. Install: `arduino-cli lib install "Adafruit SSD1306"` and `"Adafruit GFX Library"`

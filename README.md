@@ -268,12 +268,17 @@ All sigmoid parameters match `utils/fatigue_model.py` exactly:
 1. Go to **[wokwi.com](https://wokwi.com)** → New Project → ESP32
 2. Paste `ghostbreath.ino` into the sketch editor
 3. Click the `diagram.json` tab and paste `diagram.json`
-4. Press ▶ **Start Simulation**
-5. The **OLED on-screen** shows CO₂, score, and status — no Serial Monitor needed
-6. The CO₂ pot starts at 75% (~1980 ppm); alert fires within 1–2 cycles (5–10 s)
-7. Turn the pot counter-clockwise to lower CO₂ and watch score drop back to SAFE
+4. Click **Library Manager** → Add **Adafruit SSD1306** (GFX pulled in automatically)
+5. Press ▶ **Start Simulation** — OLED shows splash screen on boot
+6. After 5 seconds: first cycle fires; OLED shows `CO2: ~1980 ppm / Score: 0.807 / ALERT`; LED lights; buzzer sounds
+7. **Turn CO₂ dial (left pot) counter-clockwise** to lower ppm → score drops → SAFE
+8. **Turn CO₂ dial fully clockwise** (3 o'clock) → 2500 ppm → ALERT returns
 
-See `05_Wokwi_Firmware/README.md` for full instructions and report screenshots.
+**Potentiometer quick guide:** Click + drag right/up = clockwise = higher CO₂.
+Dial position 9 o'clock (fully left) = 420 ppm · 12 o'clock = 1460 ppm · 3 o'clock = 2500 ppm.
+
+See `05_Wokwi_Firmware/README.md` for complete walkthrough, expected OLED states,
+and troubleshooting.
 
 ### Serial output sample (optional)
 
