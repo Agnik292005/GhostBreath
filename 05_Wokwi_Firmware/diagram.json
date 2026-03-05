@@ -82,7 +82,7 @@
     ["esp:GND.2",  "pot_teg:GND", "black", ["h110", "v-70",  "h140"]],
     ["pot_teg:SIG","esp:D35",     "green", ["h-40", "v120",  "h-150"]],
 
-    ["esp:D2",     "r_led:1",     "yellow",["h-120","v180"]],
+    ["esp:D25",    "r_led:1",     "yellow",[]],
     ["r_led:2",    "led:A",       "yellow",["v20"]],
     ["led:K",      "esp:GND.1",   "black", ["v60",  "h120",  "v-200"]],
 

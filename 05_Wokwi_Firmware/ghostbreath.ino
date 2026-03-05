@@ -6,7 +6,7 @@
  * Hardware (simulated):
  *   GPIO 34  – Potentiometer  →  CO₂ concentration (420–2500 ppm)
  *   GPIO 35  – Potentiometer  →  TEG boost voltage  (0–3.3 V)
- *   GPIO  2  – LED            →  Fatigue alert indicator (active HIGH)
+ *   GPIO 25  – LED            →  Fatigue alert indicator (active HIGH)
  *   GPIO  4  – Buzzer         →  Fatigue alert tone (1 kHz via tone())
  *   GPIO 21  – OLED SDA       →  SSD1306 I2C data
  *   GPIO 22  – OLED SCL       →  SSD1306 I2C clock
@@ -51,7 +51,7 @@ Adafruit_SSD1306 display(OLED_W, OLED_H, &Wire, OLED_RST);
 // ─── Pin assignments ───────────────────────────────────────────────────────
 #define PIN_CO2_ADC   34   // ADC1_CH6 — CO₂ simulation potentiometer
 #define PIN_TEG_ADC   35   // ADC1_CH7 — TEG voltage simulation potentiometer
-#define PIN_LED        2   // Alert LED (active HIGH)
+#define PIN_LED       25   // Alert LED (active HIGH) — GPIO2 avoided: internal onboard LED in Wokwi drops ~2V, preventing external LED from lighting
 #define PIN_BUZZER     4   // Buzzer driven via tone() for Wokwi compatibility
 #define PIN_SDA       21   // OLED I2C data
 #define PIN_SCL       22   // OLED I2C clock
@@ -217,19 +217,34 @@ void update_oled(float co2_ppm, float score, bool alert) {
   display.print(F("Score: "));
   display.println(score, 3);
 
-  // Line 4 — status (large + inverted on ALERT for maximum visibility)
+  // Line 4 — status (size-2 for all states so it's readable in Wokwi's small view)
   if (alert) {
     // Fill banner white, print black text so it stands out
     display.fillRect(0, 38, OLED_W, OLED_H - 38, SSD1306_WHITE);
     display.setTextColor(SSD1306_BLACK);
     display.setTextSize(2);
     display.setCursor(4, 42);
+    display.print(F("ALERT"));
   } else {
     display.setTextColor(SSD1306_WHITE);
-    display.setTextSize(1);
-    display.setCursor(0, 40);
+    display.setTextSize(2);
+    if (score >= SCORE_HIGH) {
+      display.setCursor(0, 36);
+      display.print(F("HIGH"));
+      display.setTextSize(1);
+      display.setCursor(0, 54);
+      display.print(F("FATIGUE"));
+    } else if (score >= SCORE_MILD) {
+      display.setCursor(0, 36);
+      display.print(F("MILD"));
+      display.setTextSize(1);
+      display.setCursor(0, 54);
+      display.print(F("FATIGUE"));
+    } else {
+      display.setCursor(4, 44);
+      display.print(F("SAFE"));
+    }
   }
-  display.println(oled_status(score));
 
   display.display();
 }
