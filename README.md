@@ -18,9 +18,10 @@ GhostBreath/
 ├── 02_Supercap_Model.ipynb         ← Module 2 (complete)
 ├── 03_CO2_Room_Model.ipynb         ← Module 3 (complete)
 ├── 04_Fatigue_Model.ipynb          ← Module 4 (complete)
-├── 05_Wokwi_Firmware/              ← Module 5 (complete)
-│   ├── ghostbreath.ino             ← ESP32 Arduino sketch
-│   ├── diagram.json                ← Wokwi circuit schematic
+├── 05_Wokwi_Firmware/              ← Module 5 (complete, v2 OLED edition)
+│   ├── ghostbreath.ino             ← ESP32 Arduino sketch (+ OLED, bug-fixes)
+│   ├── diagram.json                ← Wokwi circuit schematic (+ SSD1306)
+│   ├── wokwi.toml                  ← Adafruit library declarations
 │   └── README.md                   ← Simulation instructions
 ├── 06_Full_System_Simulator.ipynb  ← Module 6 (complete)
 ├── utils/
@@ -200,14 +201,23 @@ for ESP32-C3 integer arithmetic (3 multiplies + 2 exp() calls per sample).
 
 ---
 
-## Module 5: Embedded Firmware Simulation (Wokwi)
+## Module 5: Embedded Firmware Simulation (Wokwi) — v2 OLED Edition
 
 **Platform:** ESP32 DevKit v1 simulated in [Wokwi](https://wokwi.com)
 **Folder:** `05_Wokwi_Firmware/`
 
 The firmware is a **direct C port** of the Python fatigue model from Module 4.
 Every constant and formula is identical — only the input source changes (ADC
-potentiometers replace the CO₂ ODE solver).
+potentiometers replace the CO₂ ODE solver). v2 adds an SSD1306 OLED display
+and fixes three Wokwi simulation bugs.
+
+### Bug-fixes applied in v2
+
+| # | Root Cause | Fix |
+|---|-----------|-----|
+| 1 | `analogRead()` defaults to `ADC_0db` (0–1.1 V); pot voltages above ~1.1 V read as 0, locking CO₂ at 420 ppm so score never reaches 0.70 | `analogSetAttenuation(ADC_11db)` — full 0–3.3 V range |
+| 2 | `while (!Serial) delay(10)` deadlocks `setup()` in some Wokwi builds | Removed the guard |
+| 3 | `wokwi-buzzer` needs a frequency signal; `digitalWrite(HIGH)` is silent | `tone(PIN_BUZZER, 1000)` / `noTone()` |
 
 ### Circuit
 
@@ -216,15 +226,28 @@ potentiometers replace the CO₂ ODE solver).
 | Left potentiometer | 34 (ADC) | CO₂ concentration: 420–2500 ppm |
 | Right potentiometer | 35 (ADC) | TEG boost voltage: 0–3.3 V |
 | Red LED | 2 | Fatigue alert indicator |
-| Buzzer | 4 | Fatigue alert tone |
+| Buzzer | 4 | Fatigue alert tone (1 kHz) |
+| SSD1306 OLED 128×64 | 21 SDA, 22 SCL | Live CO₂ / score / status display |
+
+### OLED display (each cycle)
+
+```
+GhostBreath
+────────────────
+CO2: 1980 ppm
+Score: 0.807
+████ ALERT ████   ← inverted banner when score >= 0.70
+```
+
+Status text: `SAFE` · `MILD FATIGUE` · `HIGH FATIGUE` · `ALERT` (large + inverted)
 
 ### Firmware duty cycle
 
 ```
-Wake → Read CO₂ ADC → Read TEG ADC → Compute dC/dt
+Wake → Read CO₂ ADC (8-sample avg) → Read TEG ADC → Compute dC/dt
      → score = 0.60·f_co2 + 0.20·f_rate + 0.20·f_time
-     → If score ≥ 0.70: LED ON + Buzzer ON
-     → Serial log → Deep sleep 5 min  (delay 5 s in Wokwi)
+     → If score >= 0.70: LED ON + tone(1 kHz) + OLED "ALERT" banner
+     → OLED refresh → Serial log → Deep sleep 5 min (delay 5 s in Wokwi)
 ```
 
 ### Firmware–Model consistency
@@ -245,22 +268,26 @@ All sigmoid parameters match `utils/fatigue_model.py` exactly:
 1. Go to **[wokwi.com](https://wokwi.com)** → New Project → ESP32
 2. Paste `ghostbreath.ino` into the sketch editor
 3. Click the `diagram.json` tab and paste `diagram.json`
-4. Press ▶ **Start Simulation** — open the Serial Monitor at 115200 baud
-5. Turn the left potentiometer clockwise to raise CO₂ and watch the LED
+4. Press ▶ **Start Simulation**
+5. The **OLED on-screen** shows CO₂, score, and status — no Serial Monitor needed
+6. The CO₂ pot starts at 75% (~1980 ppm); alert fires within 1–2 cycles (5–10 s)
+7. Turn the pot counter-clockwise to lower CO₂ and watch score drop back to SAFE
 
-See `05_Wokwi_Firmware/README.md` for detailed instructions, expected serial
-output, and the four screenshots required for the project report.
+See `05_Wokwi_Firmware/README.md` for full instructions and report screenshots.
 
-### Serial output sample
+### Serial output sample (optional)
 
 ```
 +---------------------------------------------------------+
-|  GhostBreath   Cycle #006      Session:    30 min       |
+|  GhostBreath   Cycle #001      Session:     5 min       |
 +-----------------------------+---------------------------+
-|  CO2    :  1900.0 ppm       |  dC/dt :  +296.00 ppm/min |
-|  TEG    :   2.100 V          |  Score :  0.7614          |
-|  Status : ALERT / HIGH FATIGUE |  Alert :  ON          |
+|  CO2    :  1980.0 ppm       |  dC/dt :  +312.00 ppm/min |
+|  TEG    :   0.000 V         |  Score :  0.8070          |
+|  Status : ALERT / HIGH FATIGUE |  Alert :  ON           |
 +---------------------------------------------------------+
+
+  [scores] f_co2=0.993  f_rate=1.000  f_time=0.057
+  [weights] 0.60*0.993 + 0.20*1.000 + 0.20*0.057 = 0.8070
 ```
 ---
 

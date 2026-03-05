@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "GhostBreath – Embedded Systems Project",
+  "author": "GhostBreath – Embedded Systems Project (v2 OLED edition)",
   "editor": "wokwi",
   "parts": [
     {
@@ -18,7 +18,7 @@
       "rotate": 0,
       "attrs": {
         "label": "CO2 level (420-2500 ppm)",
-        "value": "0"
+        "value": "0.75"
       }
     },
     {
@@ -61,6 +61,16 @@
         "label": "Alert Buzzer",
         "volume": "0.1"
       }
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "top": 390,
+      "left": 20,
+      "attrs": {
+        "width": "128",
+        "height": "64"
+      }
     }
   ],
   "connections": [
@@ -77,6 +87,11 @@
     ["led:K",      "esp:GND.3",   "black", ["v60",  "h120",  "v-200"]],
 
     ["esp:D4",     "buzzer:1",    "orange",["h120", "v160"]],
-    ["buzzer:2",   "esp:GND.4",   "black", ["v30",  "h-110", "v-180"]]
+    ["buzzer:2",   "esp:GND.4",   "black", ["v30",  "h-110", "v-180"]],
+
+    ["esp:SDA",    "oled:SDA",    "blue",  ["v50",  "h-60"]],
+    ["esp:SCL",    "oled:SCL",    "cyan",  ["v40",  "h-50"]],
+    ["esp:3V3.3",  "oled:VCC",    "red",   ["v30",  "h-40"]],
+    ["esp:GND.5",  "oled:GND",    "black", ["v20",  "h-30"]]
   ]
 }
