@@ -18,9 +18,10 @@ GhostBreath/
 ├── 02_Supercap_Model.ipynb         ← Module 2 (complete)
 ├── 03_CO2_Room_Model.ipynb         ← Module 3 (complete)
 ├── 04_Fatigue_Model.ipynb          ← Module 4 (complete)
-├── 05_Wokwi_Firmware/
-│   ├── ghostbreath.ino             ← Module 5 (upcoming)
-│   └── diagram.json
+├── 05_Wokwi_Firmware/              ← Module 5 (complete)
+│   ├── ghostbreath.ino             ← ESP32 Arduino sketch
+│   ├── diagram.json                ← Wokwi circuit schematic
+│   └── README.md                   ← Simulation instructions
 ├── 06_Full_System_Simulator.ipynb  ← Module 6 (upcoming)
 ├── utils/
 │   ├── __init__.py
@@ -45,7 +46,7 @@ GhostBreath/
 | 2 | Supercapacitor Charge/Discharge | ✅ Complete |
 | 3 | CO₂ Room Buildup Model | ✅ Complete |
 | 4 | Cognitive Fatigue Risk Model | ✅ Complete |
-| 5 | MCU Firmware Simulation (Wokwi) | 🔜 Upcoming |
+| 5 | MCU Firmware Simulation (Wokwi) | ✅ Complete |
 | 6 | Full System Integration Simulator | 🔜 Upcoming |
 
 ---
@@ -196,6 +197,71 @@ for ESP32-C3 integer arithmetic (3 multiplies + 2 exp() calls per sample).
 - `figures/04a_fatigue_score_vs_time.png` — CO₂ and fatigue score dual-panel, 4-hour session
 - `figures/04b_alert_thresholds.png` — Score decomposition + decision surface contour map
 - `figures/04c_scenario_comparison.png` — Three scenarios: window closed / open / 2 occupants
+
+---
+
+## Module 5: Embedded Firmware Simulation (Wokwi)
+
+**Platform:** ESP32 DevKit v1 simulated in [Wokwi](https://wokwi.com)
+**Folder:** `05_Wokwi_Firmware/`
+
+The firmware is a **direct C port** of the Python fatigue model from Module 4.
+Every constant and formula is identical — only the input source changes (ADC
+potentiometers replace the CO₂ ODE solver).
+
+### Circuit
+
+| Component | GPIO | Role |
+|-----------|------|------|
+| Left potentiometer | 34 (ADC) | CO₂ concentration: 420–2500 ppm |
+| Right potentiometer | 35 (ADC) | TEG boost voltage: 0–3.3 V |
+| Red LED | 2 | Fatigue alert indicator |
+| Buzzer | 4 | Fatigue alert tone |
+
+### Firmware duty cycle
+
+```
+Wake → Read CO₂ ADC → Read TEG ADC → Compute dC/dt
+     → score = 0.60·f_co2 + 0.20·f_rate + 0.20·f_time
+     → If score ≥ 0.70: LED ON + Buzzer ON
+     → Serial log → Deep sleep 5 min  (delay 5 s in Wokwi)
+```
+
+### Firmware–Model consistency
+
+All sigmoid parameters match `utils/fatigue_model.py` exactly:
+
+| Constant | Python | C |
+|----------|--------|---|
+| CO₂ sigmoid centre | `_CO2_CENTRE = 1250.0` | `CO2_CENTRE 1250.0f` |
+| CO₂ sigmoid scale | `_CO2_SCALE = 0.0040` | `CO2_SCALE 0.004f` |
+| Time sigmoid centre | `_TIME_CENTRE = 90.0` | `TIME_CENTRE 90.0f` |
+| Time sigmoid scale | `_TIME_SCALE = 0.033` | `TIME_SCALE 0.033f` |
+| Rate clamp | `_RATE_MAX = 15.0` | `RATE_MAX 15.0f` |
+| Weights | 0.60 / 0.20 / 0.20 | 0.60f / 0.20f / 0.20f |
+
+### How to run
+
+1. Go to **[wokwi.com](https://wokwi.com)** → New Project → ESP32
+2. Paste `ghostbreath.ino` into the sketch editor
+3. Click the `diagram.json` tab and paste `diagram.json`
+4. Press ▶ **Start Simulation** — open the Serial Monitor at 115200 baud
+5. Turn the left potentiometer clockwise to raise CO₂ and watch the LED
+
+See `05_Wokwi_Firmware/README.md` for detailed instructions, expected serial
+output, and the four screenshots required for the project report.
+
+### Serial output sample
+
+```
++---------------------------------------------------------+
+|  GhostBreath   Cycle #006      Session:    30 min       |
++-----------------------------+---------------------------+
+|  CO2    :  1900.0 ppm       |  dC/dt :  +296.00 ppm/min |
+|  TEG    :   2.100 V          |  Score :  0.7614          |
+|  Status : ALERT / HIGH FATIGUE |  Alert :  ON          |
++---------------------------------------------------------+
+```
 
 ---
 
