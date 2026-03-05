@@ -22,7 +22,7 @@ GhostBreath/
 │   ├── ghostbreath.ino             ← ESP32 Arduino sketch
 │   ├── diagram.json                ← Wokwi circuit schematic
 │   └── README.md                   ← Simulation instructions
-├── 06_Full_System_Simulator.ipynb  ← Module 6 (upcoming)
+├── 06_Full_System_Simulator.ipynb  ← Module 6 (complete)
 ├── utils/
 │   ├── __init__.py
 │   ├── teg_model.py                ← TEG physics functions
@@ -47,7 +47,7 @@ GhostBreath/
 | 3 | CO₂ Room Buildup Model | ✅ Complete |
 | 4 | Cognitive Fatigue Risk Model | ✅ Complete |
 | 5 | MCU Firmware Simulation (Wokwi) | ✅ Complete |
-| 6 | Full System Integration Simulator | 🔜 Upcoming |
+| 6 | Full System Integration Simulator | ✅ Complete |
 
 ---
 
@@ -262,6 +262,48 @@ output, and the four screenshots required for the project report.
 |  Status : ALERT / HIGH FATIGUE |  Alert :  ON          |
 +---------------------------------------------------------+
 ```
+---
+
+## Module 6: Full System Integration Simulator
+
+**Notebook:** `06_Full_System_Simulator.ipynb`
+
+Integrates all five prior modules into a single end-to-end simulation at
+**1-second resolution** over a 4-hour study session.
+
+### Simulation loop
+
+```
+Every second:
+  CO2 <- solve_co2() ODE (Module 3)
+  V_cap <- constant-power charge model (Module 2)  P_net = 6.05 mW - 0.15 mW sleep
+
+Every 300 seconds (MCU wake):
+  Deduct E_session = 107.2 mJ from supercapacitor
+  score = 0.60*f_co2 + 0.20*f_rate + 0.20*f_time  (Module 4)
+  If score >= 0.70 -> Alert
+```
+
+### Results (DT = 15 C, 50% coupling)
+
+| Scenario | Mild alert | High alert | CO2 final |
+|----------|-----------|-----------|-----------|
+| A - 1 person, closed | 45 min | 105 min | 1973 ppm |
+| B - 1 person, window @ 90 min | 45 min | 175 min (+70 min delay) | 1616 ppm |
+| C - 2 occupants, closed | 20 min | 50 min | 3526 ppm |
+
+### Energy budget (4-hour session)
+
+| Metric | Value |
+|--------|-------|
+| E_harvested (TEG) | 87.1 J |
+| E_consumed (48 wakes + sleep) | 7.3 J |
+| Surplus | 79.8 J |
+| Supercap final voltage | 2.66 V (near full) |
+| Boot-ready (V >= 1.5 V) | 1.8 min from cold start |
+
+**Figure:** `figures/06_ghostbreath_system_dashboard.png` -- 4-panel dashboard:
+CO2 buildup / Supercapacitor voltage / Fatigue score / Cumulative energy budget
 
 ---
 
