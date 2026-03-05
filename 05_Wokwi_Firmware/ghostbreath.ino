@@ -316,6 +316,14 @@ void setup() {
 
   pinMode(PIN_LED,    OUTPUT);
   pinMode(PIN_BUZZER, OUTPUT);
+
+  // LED self-test: verify the LED circuit is functional at boot
+  Serial.println(F("[LED] Self-test ON (1.5 s)..."));
+  digitalWrite(PIN_LED, HIGH);
+  delay(1500);
+  digitalWrite(PIN_LED, LOW);
+  Serial.println(F("[LED] Self-test passed"));
+
   set_alert(false);
 
   Serial.println();

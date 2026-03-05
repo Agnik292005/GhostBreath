@@ -16,7 +16,7 @@ identical; the only differences are language (C vs Python) and input source
 (ADC potentiometers replace the CO₂ ODE solver).
 
 **v2 adds:** SSD1306 OLED live display + three Wokwi bug-fixes (ADC range,
-boot deadlock, buzzer tone).
+boot deadlock, buzzer tone) + LED wiring fix (GND pin correction) + LED self-test at boot.
 
 ---
 
@@ -68,6 +68,7 @@ boot deadlock, buzzer tone).
 | 1 | `analogRead()` defaults to `ADC_0db` (0–1.1 V range); pot signals above ~1.1 V read as 0 | CO₂ locked at 420 ppm; score never crosses 0.70; LED/buzzer never fire | `analogSetAttenuation(ADC_11db)` in `setup()` |
 | 2 | `while (!Serial) delay(10)` deadlocks `setup()` on some Wokwi builds | Firmware hangs on boot; no cycles ever execute | Removed the guard |
 | 3 | `wokwi-buzzer` requires a frequency signal; `digitalWrite(HIGH)` is silent | LED lights but buzzer makes no sound | `tone(PIN_BUZZER, 1000)` / `noTone()` |
+| 4 | `diagram.json` connected `led:K` to `esp:GND.3` and `buzzer:2` to `esp:GND.4` — pins that do not exist on the 30-pin ESP32 DevKit v1 (which has only `GND.1` and `GND.2`) | LED never turns on despite firmware logic being correct; buzzer audio masked the issue because `tone()` works independently of circuit continuity | Changed `led:K → esp:GND.1` and `buzzer:2 → esp:GND.2` in `diagram.json`; added LED self-test in `setup()` to verify at boot |
 
 ---
 
@@ -248,7 +249,7 @@ score**. Leave it at any position.
 The following describes exactly what you should see at each stage of the
 simulation with the CO₂ pot at its default 75% position.
 
-### Stage 1 — Boot (0–1 second)
+### Stage 1 — Boot (0–2.5 seconds)
 
 **What happens:**
 - Serial Monitor prints the startup banner (if open)
@@ -259,10 +260,10 @@ simulation with the CO₂ pot at its default 75% position.
 
   Initialising...
   ```
-- LED: OFF
-- Buzzer: silent
+- **LED self-test:** LED turns ON for 1.5 seconds immediately after the splash, then turns OFF
+- Buzzer: silent throughout boot
 
-**What to look for:** OLED text visible on the blue display tile in the circuit view.
+**What to look for:** OLED text visible on the blue display tile; red LED briefly lights during self-test — if it does not, re-paste `diagram.json` from this repo.
 
 ---
 
@@ -409,7 +410,7 @@ When the OLED shows `SAFE` (dial at 0%):
 | OLED completely black, no text | Adafruit SSD1306 library not installed | Open Library Manager → Add "Adafruit SSD1306" |
 | OLED shows a `?` badge on the component | Wrong pin names in old `diagram.json` (`esp:SDA` / `esp:SCL` don't exist) | Re-paste the current `diagram.json` from this repo |
 | OLED has wires but stays black | I2C address mismatch (rare) | The firmware uses `0x3C` — standard for 128×64 SSD1306 modules |
-| LED never lights even with dial at max | Old `.ino` (v1) missing `analogSetAttenuation()` | Re-paste current `ghostbreath.ino` (v2) |
+| LED never lights even with dial at max | Old `diagram.json` with `esp:GND.3` (non-existent pin — no return path for current) | Re-paste current `diagram.json` from this repo; LED self-test at boot confirms the fix |
 | Buzzer icon shows but produces no sound | Old `.ino` using `digitalWrite(HIGH)` instead of `tone()` | Re-paste current `ghostbreath.ino` (v2) |
 | Score shown on OLED never crosses 0.70 | ADC attenuation bug in old firmware | Re-paste `ghostbreath.ino` (v2); also try turning dial fully clockwise |
 | Simulation appears frozen / no output | Old `.ino` with `while (!Serial) delay(10)` deadlock | Re-paste `ghostbreath.ino` (v2) |

@@ -84,10 +84,10 @@
 
     ["esp:D2",     "r_led:1",     "yellow",["h-120","v180"]],
     ["r_led:2",    "led:A",       "yellow",["v20"]],
-    ["led:K",      "esp:GND.3",   "black", ["v60",  "h120",  "v-200"]],
+    ["led:K",      "esp:GND.1",   "black", ["v60",  "h120",  "v-200"]],
 
     ["esp:D4",     "buzzer:1",    "orange",["h120", "v160"]],
-    ["buzzer:2",   "esp:GND.4",   "black", ["v30",  "h-110", "v-180"]],
+    ["buzzer:2",   "esp:GND.2",   "black", ["v30",  "h-110", "v-180"]],
 
     ["esp:D21",    "oled:SDA",    "blue",  []],
     ["esp:D22",    "oled:SCL",    "cyan",  []],
