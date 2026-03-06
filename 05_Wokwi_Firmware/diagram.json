@@ -33,26 +33,6 @@
       }
     },
     {
-      "type": "wokwi-resistor",
-      "id": "r_led",
-      "top": 430,
-      "left": -100,
-      "rotate": 90,
-      "attrs": {
-        "value": "220"
-      }
-    },
-    {
-      "type": "wokwi-led",
-      "id": "led",
-      "top": 390,
-      "left": -140,
-      "attrs": {
-        "color": "red",
-        "label": "Alert LED"
-      }
-    },
-    {
       "type": "wokwi-buzzer",
       "id": "buzzer",
       "top": 390,
@@ -81,10 +61,6 @@
     ["esp:3V3.2",  "pot_teg:VCC", "red",   ["h100", "v-100", "h160"]],
     ["esp:GND.2",  "pot_teg:GND", "black", ["h110", "v-70",  "h140"]],
     ["pot_teg:SIG","esp:D35",     "green", ["h-40", "v120",  "h-150"]],
-
-    ["esp:D25",    "r_led:1",     "yellow",[]],
-    ["r_led:2",    "led:A",       "yellow",["v20"]],
-    ["led:K",      "esp:GND.1",   "black", ["v60",  "h120",  "v-200"]],
 
     ["esp:D4",     "buzzer:1",    "orange",["h120", "v160"]],
     ["buzzer:2",   "esp:GND.2",   "black", ["v30",  "h-110", "v-180"]],

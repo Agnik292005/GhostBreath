@@ -15,8 +15,7 @@ Module 4 (`utils/fatigue_model.py`). Every constant, weight, and formula is
 identical; the only differences are language (C vs Python) and input source
 (ADC potentiometers replace the CO₂ ODE solver).
 
-**v2 adds:** SSD1306 OLED live display + three Wokwi bug-fixes (ADC range,
-boot deadlock, buzzer tone) + LED wiring fix (GND pin correction) + LED self-test at boot.
+**v2 adds:** SSD1306 OLED live display + three Wokwi bug-fixes (ADC range, boot deadlock, buzzer tone). LED removed — buzzer + OLED are sufficient for alert.
 
 ---
 
@@ -37,8 +36,8 @@ boot deadlock, buzzer tone) + LED wiring fix (GND pin correction) + LED self-tes
                    ┌──────────────────────────────┐
   CO₂ pot (GPIO34)─┤ ADC1_CH6                     │
   TEG pot (GPIO35)─┤ ADC1_CH7                     │
-                   │   ESP32                       │──GPIO25──[220Ω]──[LED🔴]──GND
-                   │   DevKit v1                   │──GPIO 4──────────[Buzzer]──GND
+                   │   ESP32                       │──GPIO 4──────────[Buzzer]──GND
+                   │   DevKit v1                   │
                    │                               │
                    │   GPIO21 (SDA) ───────────────┼──SDA──┐
                    │   GPIO22 (SCL) ───────────────┼──SCL──┤  SSD1306
@@ -55,8 +54,7 @@ boot deadlock, buzzer tone) + LED wiring fix (GND pin correction) + LED self-tes
 |-----------|------|------|
 | Left potentiometer | 34 (ADC) | Simulates CO₂ sensor reading (420–2500 ppm) |
 | Right potentiometer | 35 (ADC) | Simulates TEG boost voltage (0–3.3 V) |
-| Red LED | 25 | Fatigue alert indicator — lights when score ≥ 0.70 |
-| Buzzer | 4 | Fatigue alert tone — 1 kHz via `tone()` |
+| Buzzer | 4 | Fatigue alert tone — 1 kHz via `tone()` when score ≥ 0.70 |
 | SSD1306 OLED 128×64 | 21 (SDA), 22 (SCL) | Live CO₂ / score / status display |
 
 ---
@@ -68,8 +66,7 @@ boot deadlock, buzzer tone) + LED wiring fix (GND pin correction) + LED self-tes
 | 1 | `analogRead()` defaults to `ADC_0db` (0–1.1 V range); pot signals above ~1.1 V read as 0 | CO₂ locked at 420 ppm; score never crosses 0.70; LED/buzzer never fire | `analogSetAttenuation(ADC_11db)` in `setup()` |
 | 2 | `while (!Serial) delay(10)` deadlocks `setup()` on some Wokwi builds | Firmware hangs on boot; no cycles ever execute | Removed the guard |
 | 3 | `wokwi-buzzer` requires a frequency signal; `digitalWrite(HIGH)` is silent | LED lights but buzzer makes no sound | `tone(PIN_BUZZER, 1000)` / `noTone()` |
-| 4 | `diagram.json` connected `led:K` to `esp:GND.3` and `buzzer:2` to `esp:GND.4` — pins that do not exist on the 30-pin ESP32 DevKit v1 (which has only `GND.1` and `GND.2`) | LED never turns on despite firmware logic being correct; buzzer audio masked the issue because `tone()` works independently of circuit continuity | Changed `led:K → esp:GND.1` and `buzzer:2 → esp:GND.2` in `diagram.json`; added LED self-test in `setup()` to verify at boot |
-| 5 | GPIO2 on `wokwi-esp32-devkit-v1` has an internal onboard blue LED. When GPIO2 goes HIGH, the internal LED drops ~2V, leaving only ~1.3V for the external circuit; the red LED needs ≥2V to conduct → stays dark. Non-ALERT status text used `setTextSize(1)` (8px), too small to read in Wokwi's circuit view. | External LED never lights even with corrected GND; OLED appears to only show ALERT (other states exist but are invisible) | Moved `PIN_LED` from GPIO2 to **GPIO25** (no internal load); changed non-ALERT status display to `setTextSize(2)` with two-line layout for MILD/HIGH |
+| 4 | Non-ALERT status text used `setTextSize(1)` (8 px) — too small to read in Wokwi's circuit view. LED was removed (buzzer + OLED are sufficient for alert). | OLED states other than ALERT appeared invisible at small font size | Changed non-ALERT status display to `setTextSize(2)` with two-line layout for MILD/HIGH; removed LED and resistor from circuit entirely |
 
 ---
 
@@ -154,10 +151,10 @@ Wake
 
 | Score | Label | LED | Buzzer |
 |-------|-------|-----|--------|
-| 0.00 – 0.30 | SAFE | OFF | Silent |
-| 0.30 – 0.60 | MILD FATIGUE | OFF | Silent |
-| 0.60 – 0.70 | HIGH FATIGUE | OFF | Silent |
-| ≥ 0.70 | ALERT | **ON** | **1 kHz** |
+| 0.00 – 0.30 | SAFE | Silent |
+| 0.30 – 0.60 | MILD FATIGUE | Silent |
+| 0.60 – 0.70 | HIGH FATIGUE | Silent |
+| ≥ 0.70 | ALERT | **1 kHz** |
 
 ---
 
@@ -250,10 +247,9 @@ score**. Leave it at any position.
 The following describes exactly what you should see at each stage of the
 simulation with the CO₂ pot at its default 75% position.
 
-### Stage 1 — Boot (0–2.5 seconds)
+### Stage 1 — Boot (0–1 second)
 
 **What happens:**
-- Serial Monitor prints the startup banner (if open)
 - OLED shows the splash screen:
   ```
   GhostBreath v2
@@ -261,10 +257,9 @@ simulation with the CO₂ pot at its default 75% position.
 
   Initialising...
   ```
-- **LED self-test:** LED turns ON for 1.5 seconds immediately after the splash, then turns OFF
-- Buzzer: silent throughout boot
+- Buzzer: silent
 
-**What to look for:** OLED text visible on the blue display tile; red LED briefly lights during self-test — if it does not, re-paste `diagram.json` from this repo.
+**What to look for:** OLED text visible on the blue display tile in the circuit view.
 
 ---
 

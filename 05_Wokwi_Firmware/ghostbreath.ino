@@ -6,7 +6,6 @@
  * Hardware (simulated):
  *   GPIO 34  – Potentiometer  →  CO₂ concentration (420–2500 ppm)
  *   GPIO 35  – Potentiometer  →  TEG boost voltage  (0–3.3 V)
- *   GPIO 25  – LED            →  Fatigue alert indicator (active HIGH)
  *   GPIO  4  – Buzzer         →  Fatigue alert tone (1 kHz via tone())
  *   GPIO 21  – OLED SDA       →  SSD1306 I2C data
  *   GPIO 22  – OLED SCL       →  SSD1306 I2C clock
@@ -23,7 +22,7 @@
  *   score <  0.30              →  SAFE
  *   0.30 ≤ score < 0.60        →  MILD FATIGUE
  *   0.60 ≤ score < 0.70        →  HIGH FATIGUE  (no alert yet)
- *   score ≥ 0.70               →  ALERT  (LED + buzzer + OLED inverted)
+ *   score ≥ 0.70               →  ALERT  (buzzer + OLED inverted)
  *
  * Bug-fixes vs v1
  * ---------------
@@ -51,7 +50,6 @@ Adafruit_SSD1306 display(OLED_W, OLED_H, &Wire, OLED_RST);
 // ─── Pin assignments ───────────────────────────────────────────────────────
 #define PIN_CO2_ADC   34   // ADC1_CH6 — CO₂ simulation potentiometer
 #define PIN_TEG_ADC   35   // ADC1_CH7 — TEG voltage simulation potentiometer
-#define PIN_LED       25   // Alert LED (active HIGH) — GPIO2 avoided: internal onboard LED in Wokwi drops ~2V, preventing external LED from lighting
 #define PIN_BUZZER     4   // Buzzer driven via tone() for Wokwi compatibility
 #define PIN_SDA       21   // OLED I2C data
 #define PIN_SCL       22   // OLED I2C clock
@@ -176,7 +174,6 @@ float read_teg_voltage() {
 
 // ─── Alert output (Bug-fix 3: use tone() so Wokwi buzzer actually sounds) ─
 void set_alert(bool active) {
-  digitalWrite(PIN_LED, active ? HIGH : LOW);
   if (active) {
     tone(PIN_BUZZER, ALERT_TONE_HZ);
   } else {
@@ -329,16 +326,7 @@ void setup() {
     display.display();
   }
 
-  pinMode(PIN_LED,    OUTPUT);
   pinMode(PIN_BUZZER, OUTPUT);
-
-  // LED self-test: verify the LED circuit is functional at boot
-  Serial.println(F("[LED] Self-test ON (1.5 s)..."));
-  digitalWrite(PIN_LED, HIGH);
-  delay(1500);
-  digitalWrite(PIN_LED, LOW);
-  Serial.println(F("[LED] Self-test passed"));
-
   set_alert(false);
 
   Serial.println();
@@ -370,7 +358,7 @@ void setup() {
   Serial.println(F("  Left  pot (GPIO34) -- Clockwise = higher CO2 ppm"));
   Serial.println(F("  Right pot (GPIO35) -- Clockwise = higher TEG voltage"));
   Serial.println(F("  OLED shows CO2 / score / status without Serial Monitor"));
-  Serial.println(F("  LED + buzzer activate when score >= 0.70"));
+  Serial.println(F("  Buzzer activates when score >= 0.70"));
   Serial.println(F("  Each cycle = 5 seconds sim time = 5 real study minutes"));
   Serial.println();
   Serial.println(F("--- Starting measurement loop ---"));
