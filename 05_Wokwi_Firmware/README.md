@@ -10,6 +10,9 @@ Embedded Systems Course Project · March 2026
 This folder contains the ESP32 firmware for the GhostBreath device, simulated
 in [Wokwi](https://wokwi.com) — an online ESP32/Arduino circuit simulator.
 
+**Live project (open and run instantly, no setup needed):**
+[https://wokwi.com/projects/457666576233418753](https://wokwi.com/projects/457666576233418753)
+
 The firmware is a **direct embedded port** of the Python fatigue model from
 Module 4 (`utils/fatigue_model.py`). Every constant, weight, and formula is
 identical; the only differences are language (C vs Python) and input source
@@ -160,18 +163,25 @@ Wake
 
 ## How to Set Up the Simulation (Full Steps)
 
-### Step 1 — Create the project
+### Option A — Open the hosted project directly (recommended)
+
+Go to **[https://wokwi.com/projects/457666576233418753](https://wokwi.com/projects/457666576233418753)**.
+The firmware, circuit, and libraries are already configured. Press **▶ Start Simulation** to run.
+
+### Option B — Manual setup from source files
+
+#### Step 1 — Create the project
 
 1. Go to **[wokwi.com](https://wokwi.com)**
 2. Click **"New Project"** → select **"ESP32"**
 
-### Step 2 — Paste the firmware
+#### Step 2 — Paste the firmware
 
 1. Click the **`sketch.ino`** tab
 2. Select all (Ctrl+A) and delete
 3. Paste the full contents of `ghostbreath.ino`
 
-### Step 3 — Paste the circuit diagram
+#### Step 3 — Paste the circuit diagram
 
 1. Click the **`diagram.json`** tab
 2. Select all (Ctrl+A) and delete
@@ -179,13 +189,13 @@ Wake
 4. The circuit view should now show: ESP32 + 2 potentiometers + red LED + buzzer + SSD1306 OLED
 5. **Check:** the OLED should have coloured wires connecting it to the ESP32 (blue, cyan, red, black). If it shows a `?` badge, re-paste `diagram.json` from the current version of this repo.
 
-### Step 4 — Install libraries
+#### Step 4 — Install libraries
 
 1. Click the **"Library Manager"** tab
 2. Click **+** → search **`Adafruit SSD1306`** → **Add**
 3. Both Adafruit SSD1306 and Adafruit GFX Library appear in "Installed Libraries"
 
-### Step 5 — Start the simulation
+#### Step 5 — Start the simulation
 
 Click the green **▶ Start Simulation** button.
 

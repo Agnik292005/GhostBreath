@@ -24,6 +24,7 @@ GhostBreath/
 │   ├── libraries.txt               ← Adafruit library declarations (wokwi.com)
 │   └── README.md                   ← Simulation instructions
 ├── 06_Full_System_Simulator.ipynb  ← Module 6 (complete)
+├── 07_Circuit_Diagram.ipynb        ← Module 7 (complete)
 ├── utils/
 │   ├── __init__.py
 │   ├── teg_model.py                ← TEG physics functions
@@ -49,6 +50,7 @@ GhostBreath/
 | 4 | Cognitive Fatigue Risk Model | ✅ Complete |
 | 5 | MCU Firmware Simulation (Wokwi) | ✅ Complete |
 | 6 | Full System Integration Simulator | ✅ Complete |
+| 7 | Full System Circuit Schematic + Working Diagram | ✅ Complete |
 
 ---
 
@@ -204,6 +206,7 @@ for ESP32-C3 integer arithmetic (3 multiplies + 2 exp() calls per sample).
 ## Module 5: Embedded Firmware Simulation (Wokwi) — v2 OLED Edition
 
 **Platform:** ESP32 DevKit v1 simulated in [Wokwi](https://wokwi.com)
+**Live simulation:** [wokwi.com/projects/457666576233418753](https://wokwi.com/projects/457666576233418753)
 **Folder:** `05_Wokwi_Firmware/`
 
 The firmware is a **direct C port** of the Python fatigue model from Module 4.
@@ -265,6 +268,9 @@ All sigmoid parameters match `utils/fatigue_model.py` exactly:
 
 ### How to run
 
+**Quickest:** Open [https://wokwi.com/projects/457666576233418753](https://wokwi.com/projects/457666576233418753) — the project loads instantly, press ▶ to run.
+
+**Manual setup:**
 1. Go to **[wokwi.com](https://wokwi.com)** → New Project → ESP32
 2. Paste `ghostbreath.ino` into the sketch editor
 3. Click the `diagram.json` tab and paste `diagram.json`
@@ -336,6 +342,47 @@ Every 300 seconds (MCU wake):
 
 **Figure:** `figures/06_ghostbreath_system_dashboard.png` -- 4-panel dashboard:
 CO2 buildup / Supercapacitor voltage / Fatigue score / Cumulative energy budget
+
+---
+
+---
+
+## Module 7: Full System Circuit Schematic & Working Diagram
+
+**Notebook:** `07_Circuit_Diagram.ipynb`
+
+### System Working Diagram
+
+A high-level block diagram tracing the complete data and energy flow through the device:
+
+```
+[Laptop Heat ΔT≥15°C]
+        ↓
+[TEG SP1848-27145SA]  0.1–0.8 V, ~6 mW
+        ↓
+[LTC3108 Boost Converter]  →  [SuperCap 1F/5.5V]  →  3.3 V Rail
+                                                           ↓
+                                                   [ESP32-WROOM-32]
+                                                    ↗           ↓
+                                       [SCD41 CO₂ Sensor]  [Fatigue Algorithm]
+                                       I²C 0x62            score = f(CO₂, dCdt, t)
+                                                               ↓
+                                                    score ≥ 0.70?
+                                                    ├─ YES → [SSD1306 OLED] ALERT banner
+                                                    │         [Buzzer] 1 kHz tone
+                                                    └─ NO  → [SSD1306 OLED] status only
+```
+
+### Circuit Schematic
+
+Full hardware schematic: TEG → LTC3108 → SuperCap → ESP32 + SCD41 + SSD1306 + Buzzer,
+showing every component, net, pull-up resistor, and bypass capacitor.
+
+**Figures generated:**
+- `figures/07_ghostbreath_working_diagram.png` — system block/data-flow diagram
+- `figures/07_ghostbreath_circuit_schematic.png` — full hardware circuit schematic
+
+**Wokwi simulation:** [wokwi.com/projects/457666576233418753](https://wokwi.com/projects/457666576233418753)
 
 ---
 
