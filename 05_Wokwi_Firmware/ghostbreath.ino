@@ -100,11 +100,13 @@ Adafruit_SSD1306 display(OLED_W, OLED_H, &Wire, OLED_RST);
 #define ALERT_TONE_HZ  1000
 
 // ─── Session state ────────────────────────────────────────────────────────
-// RTC_DATA_ATTR preserves variables across deep-sleep cycles.
-// In Wokwi (delay-based), plain static works identically.
-RTC_DATA_ATTR static uint32_t s_cycle     = 0;
-RTC_DATA_ATTR static float    s_study_min = 0.0f;
-RTC_DATA_ATTR static float    s_prev_co2  = CO2_PPM_MIN;
+// Plain globals — RTC_DATA_ATTR removed for Wokwi compatibility.
+// (RTC_DATA_ATTR can cause Wokwi to reinitialise these on every loop()
+//  iteration, preventing s_study_min from accumulating across cycles.)
+// On real hardware with deep sleep, restore RTC_DATA_ATTR here.
+static uint32_t s_cycle     = 0;
+static float    s_study_min = 0.0f;
+static float    s_prev_co2  = CO2_PPM_MIN;
 
 // ─── Sigmoid helper ───────────────────────────────────────────────────────
 /**
